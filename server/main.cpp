@@ -1,9 +1,13 @@
 ﻿#include <cstdio>
 <<<<<<< HEAD
+<<<<<<< HEAD
 //test branch
 =======
 //test
 >>>>>>> 2c4c24c (test)
+=======
+//
+>>>>>>> d6e6ee0 (test branch)
 #include <unistd.h>
 #include <functional>
 
