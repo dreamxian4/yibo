@@ -1,7 +1,7 @@
 ﻿#include <cstdio>
 #include <unistd.h>
 #include <functional>
-//无语了
+
 class CFunctionBase
 {
 public:
