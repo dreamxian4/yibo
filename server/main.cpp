@@ -1,9 +1,4 @@
 ﻿#include <cstdio>
-<<<<<<< HEAD
-//test branch
-=======
-//test
->>>>>>> 2c4c24c (test)
 #include <unistd.h>
 #include <functional>
 
