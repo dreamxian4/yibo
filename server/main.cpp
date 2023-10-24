@@ -5,6 +5,8 @@
 #include <functional>
 #include <memory.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 class CFunctionBase
@@ -42,7 +44,6 @@ public:
 		}
 	}
 
-	//设置进程入口函数
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetEntryFunction(_FUNCTION_ func, _ARGS_... args)
 	{
@@ -58,28 +59,30 @@ public:
 		if (pid == -1)return -3;
 		if (pid == 0) {
 			//子进程
-			close(pipes[1]);//关闭写
+			close(pipes[1]);//关闭掉写
 			pipes[1] = 0;
-			return (*m_func)();
+			ret = (*m_func)();
+			exit(0);
 		}
 		//主进程
-		close(pipes[0]);//关闭读
+		close(pipes[0]);
 		pipes[0] = 0;
 		m_pid = pid;
 		return 0;
 	}
 
-	int SendFD(int fd) {//主进程发送套接字
+	int SendFD(int fd) {//主进程完成
 		struct msghdr msg;
 		iovec iov[2];
-		iov[0].iov_base = (char*)"edoyun";
-		iov[0].iov_len = 7;
-		iov[1].iov_base = (char*)"jueding";
-		iov[1].iov_len = 8;
+		char buf[2][10] = { "edoyun","jueding" };
+		iov[0].iov_base = buf[0];
+		iov[0].iov_len = sizeof(buf[0]);
+		iov[1].iov_base = buf[1];
+		iov[1].iov_len = sizeof(buf[1]);
 		msg.msg_iov = iov;
 		msg.msg_iovlen = 2;
 
-		// 真正传递的数据
+		// 下面的数据，才是我们需要传递的。
 		cmsghdr* cmsg = (cmsghdr*)calloc(1, CMSG_LEN(sizeof(int)));
 		if (cmsg == NULL)return -1;
 		cmsg->cmsg_len = CMSG_LEN(sizeof(int));
@@ -97,7 +100,7 @@ public:
 		return 0;
 	}
 
-	int RecvFD(int& fd)//子进程接收套接字
+	int RecvFD(int& fd)
 	{
 		msghdr msg;
 		iovec iov[2];
@@ -122,37 +125,66 @@ public:
 			return -2;
 		}
 		fd = *(int*)CMSG_DATA(cmsg);
+		free(cmsg);
 		return 0;
 	}
 
 
 private:
-	CFunctionBase* m_func;//进程入口函数
-	pid_t m_pid;//父进程pid
-	int pipes[2];//父子间通信的管道
+	CFunctionBase* m_func;
+	pid_t m_pid;
+	int pipes[2];
 };
 
 
 int CreateLogServer(CProcess* proc)
 {
+	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
 	return 0;
 }
 
 int CreateClientServer(CProcess* proc)
 {
+	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
+	int fd = -1;
+	int ret = proc->RecvFD(fd);
+	printf("%s(%d):<%s> ret=%d\n", __FILE__, __LINE__, __FUNCTION__, ret);
+	printf("%s(%d):<%s> fd=%d\n", __FILE__, __LINE__, __FUNCTION__, fd);
+	sleep(1);
+	char buf[10] = "";
+	lseek(fd, 0, SEEK_SET);
+	read(fd, buf, sizeof(buf));
+	printf("%s(%d):<%s> buf=%s\n", __FILE__, __LINE__, __FUNCTION__, buf);
+	close(fd);
 	return 0;
 }
 
 int main()
 {
-	CProcess proclog, proccliets;
+	CProcess proclog, procclients;
+	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
 	proclog.SetEntryFunction(CreateLogServer, &proclog);
 	int ret = proclog.CreateSubProcess();
 	if (ret != 0) {
+		printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
 		return -1;
 	}
-	proccliets.SetEntryFunction(CreateClientServer, &proccliets);
-	ret = proccliets.CreateSubProcess();
-	if (ret != 0)return -2;
+	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
+	procclients.SetEntryFunction(CreateClientServer, &procclients);
+	ret = procclients.CreateSubProcess();
+	if (ret != 0) {
+		printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
+		return -2;
+	}
+	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
+	usleep(100 * 000);
+	int fd = open("./test.txt", O_RDWR | O_CREAT | O_APPEND);
+	printf("%s(%d):<%s> fd=%d\n", __FILE__, __LINE__, __FUNCTION__, fd);
+	if (fd == -1)return -3;
+	ret = procclients.SendFD(fd);
+	printf("%s(%d):<%s> ret=%d\n", __FILE__, __LINE__, __FUNCTION__, ret);
+	if (ret != 0)printf("errno:%d msg:%s\n", errno, strerror(errno));
+	write(fd, "edoyun", 6);
+	close(fd);
 	return 0;
 }
