@@ -1,4 +1,5 @@
-﻿#include "Process.h"
+﻿#include "Logger.h"
+#include "Process.h"
 
 
 int CreateLogServer(CProcess* proc)
