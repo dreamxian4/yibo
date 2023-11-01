@@ -61,6 +61,8 @@ int main()
 	}
 	LogTest();
 	printf("%s(%d):<%s> pid=%d\n", __FILE__, __LINE__, __FUNCTION__, getpid());
+	CThread thread(LogTest);
+	thread.Start();
 	procclients.SetEntryFunction(CreateClientServer, &procclients);
 	ret = procclients.CreateSubProcess();
 	if (ret != 0) {

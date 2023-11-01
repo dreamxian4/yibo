@@ -18,7 +18,7 @@ public:
 
 	template<typename _FUNCTION_, typename... _ARGS_>
 	CThread(_FUNCTION_ func, _ARGS_... args)
-		:m_function(new CFunction(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...))
+		:m_function(new CFunction(func, args...))
 	{
 		m_thread = 0;
 		m_bpaused = false;

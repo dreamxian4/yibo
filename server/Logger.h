@@ -38,9 +38,9 @@ public:
 	LogInfo& operator<<(const T& data) {
 		std::stringstream stream;
 		stream << data;
-		printf("%s(%d):[%s][%s]\n", __FILE__, __LINE__, __FUNCTION__, stream.str().c_str());
+		//printf("%s(%d):[%s][%s]\n", __FILE__, __LINE__, __FUNCTION__, stream.str().c_str());
 		m_buf += stream.str().c_str();
-		printf("%s(%d):[%s][%s]\n", __FILE__, __LINE__, __FUNCTION__, (char*)m_buf);
+		//printf("%s(%d):[%s][%s]\n", __FILE__, __LINE__, __FUNCTION__, (char*)m_buf);
 		return *this;
 	}
 private:
@@ -52,7 +52,7 @@ class CLoggerServer
 {
 public:
 	CLoggerServer() :
-		thread(&CLoggerServer::ThreadFunc, this)
+		m_thread(&CLoggerServer::ThreadFunc, this)
 	{
 		m_server = NULL;
 		char curpath[256] = "";
@@ -93,7 +93,7 @@ public:
 			Close();
 			return -6;
 		}
-		ret = thread.Start();
+		ret = m_thread.Start();
 		if (ret != 0) {
 			printf("%s(%d):<%s> pid=%d errno:%d msg:%s ret:%d\n",
 				__FILE__, __LINE__, __FUNCTION__, getpid(), errno, strerror(errno), ret);
@@ -109,7 +109,7 @@ public:
 			delete p;
 		}
 		m_epoll.Close();
-		thread.Stop();
+		m_thread.Stop();
 		return 0;
 	}
 	//给其他非日志进程的进程和线程使用的
@@ -147,12 +147,12 @@ public:
 	}
 private:
 	int ThreadFunc() {
-		printf("%s(%d):[%s] %d\n", __FILE__, __LINE__, __FUNCTION__, thread.isValid());
+		printf("%s(%d):[%s] %d\n", __FILE__, __LINE__, __FUNCTION__, m_thread.isValid());
 		printf("%s(%d):[%s] %d\n", __FILE__, __LINE__, __FUNCTION__, (int)m_epoll);
 		printf("%s(%d):[%s] %p\n", __FILE__, __LINE__, __FUNCTION__, m_server);
 		EPEvents events;
 		std::map<int, CSocketBase*> mapClients;
-		while (thread.isValid() && (m_epoll != -1) && (m_server != NULL)) {
+		while (m_thread.isValid() && (m_epoll != -1) && (m_server != NULL)) {
 			ssize_t ret = m_epoll.WaitEvents(events, 1);
 			//printf("%s(%d):[%s] %d\n", __FILE__, __LINE__, __FUNCTION__, ret);
 			if (ret < 0)break;
@@ -175,10 +175,11 @@ private:
 								continue;
 							}
 							auto it = mapClients.find(*pClient);
-							if (it->second != NULL) {
-								delete it->second;
+							if (it != mapClients.end()) {//it->second != NULL
+								if (it->second)delete it->second;//delete it->second;
 							}
 							mapClients[*pClient] = pClient;
+							printf("%s(%d):[%s]ret=%d \n", __FILE__, __LINE__, __FUNCTION__, r);
 						}
 						else {
 							printf("%s(%d):[%s]ptr=%p \n", __FILE__, __LINE__, __FUNCTION__, events[i].data.ptr);
@@ -223,7 +224,7 @@ private:
 		}
 	}
 private:
-	CThread thread;
+	CThread m_thread;
 	CEpoll m_epoll;
 	CSocketBase* m_server;
 	Buffer m_path;
