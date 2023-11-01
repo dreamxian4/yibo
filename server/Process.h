@@ -23,7 +23,7 @@ public:
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetEntryFunction(_FUNCTION_ func, _ARGS_... args)
 	{
-		m_func = new CFunction<_FUNCTION_, _ARGS_...>(func, args...);
+		m_func = new CFunction(func, args...);
 		return 0;
 	}
 
@@ -48,7 +48,7 @@ public:
 	}
 
 	int SendFD(int fd) {//主进程完成
-		struct msghdr msg;
+		struct msghdr msg {};
 		iovec iov[2];
 		char buf[2][10] = { "edoyun","jueding" };
 		iov[0].iov_base = buf[0];

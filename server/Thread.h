@@ -18,7 +18,7 @@ public:
 
 	template<typename _FUNCTION_, typename... _ARGS_>
 	CThread(_FUNCTION_ func, _ARGS_... args)
-		:m_function(new CFunction<_FUNCTION_, _ARGS_...>(func, args...))
+		:m_function(new CFunction(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...))
 	{
 		m_thread = 0;
 		m_bpaused = false;
@@ -32,7 +32,7 @@ public:
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetThreadFunc(_FUNCTION_ func, _ARGS_... args)
 	{
-		m_function = new CFunction<_FUNCTION_, _ARGS_...>(func, args...);
+		m_function = new CFunction(func, args...);
 		if (m_function == NULL)return -1;
 		return 0;
 	}
@@ -43,8 +43,8 @@ public:
 		if (ret != 0)return -1;
 		ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 		if (ret != 0)return -2;
-		ret = pthread_attr_setscope(&attr, PTHREAD_SCOPE_PROCESS);
-		if (ret != 0)return -3;
+		//ret = pthread_attr_setscope(&attr, PTHREAD_SCOPE_PROCESS);
+		//if (ret != 0)return -3;
 		ret = pthread_create(&m_thread, &attr, &CThread::ThreadEntry, this);
 		if (ret != 0)return -4;
 		m_mapThread[m_thread] = this;
@@ -81,7 +81,7 @@ public:
 		}
 		return 0;
 	}
-	bool isValid()const { return m_thread == 0; }
+	bool isValid()const { return m_thread != 0; }
 private:
 	//__stdcall
 	static void* ThreadEntry(void* arg) {

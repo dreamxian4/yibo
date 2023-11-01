@@ -28,6 +28,7 @@ LogInfo::LogInfo(
 		m_buf += buf;
 		free(buf);
 	}
+	m_buf += "\n";
 	va_end(ap);
 }
 
@@ -48,8 +49,8 @@ LogInfo::LogInfo(const char* file, int line, const char* func, pid_t pid, pthrea
 }
 
 LogInfo::LogInfo(
-	const char* file, int line, const char* func, 
-	pid_t pid, pthread_t tid, int level, 
+	const char* file, int line, const char* func,
+	pid_t pid, pthread_t tid, int level,
 	void* pData, size_t nSize
 )
 {
@@ -77,14 +78,20 @@ LogInfo::LogInfo(
 		m_buf += buf;
 		if (0 == ((i + 1) % 16)) {
 			m_buf += "\t; ";
-			for (size_t j = i - 15; j <= i; j++) {
+			char buf[17] = "";
+			memcpy(buf, Data + i - 15, 16);
+			for (int j = 0; j < 16; j++)
+				if ((buf[j] < 32) && (buf[j] >= 0))buf[j] = '.';
+			m_buf += buf;
+
+			/*for (size_t j = i - 15; j <= i; j++) {
 				if ((Data[j] & 0xFF) > 31 && ((Data[j] & 0xFF) < 0x7F)) {
 					m_buf += Data[i];
 				}
 				else {
 					m_buf += '.';
 				}
-			}
+			}*/
 			m_buf += "\n";
 		}
 	}
@@ -108,6 +115,7 @@ LogInfo::LogInfo(
 LogInfo::~LogInfo()
 {
 	if (bAuto) {
+		m_buf += "\n";
 		CLoggerServer::Trace(*this);
 	}
 }
