@@ -210,7 +210,7 @@ public:
 			return (int)len;//收到数据
 		}
 		if (len < 0) {
-			if (errno == EINTR || (errno == EAGAIN)) {
+			if (errno == EINTR || (errno == EAGAIN)) {//非阻塞
 				data.clear();
 				return 0;//没有数据收到
 			}
