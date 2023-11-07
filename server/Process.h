@@ -23,7 +23,7 @@ public:
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetEntryFunction(_FUNCTION_ func, _ARGS_... args)
 	{
-		m_func = new CFunction<_FUNCTION_, _ARGS_...>(func, args...);
+		m_func = new CFunction(func, args...);
 		return 0;
 	}
 
