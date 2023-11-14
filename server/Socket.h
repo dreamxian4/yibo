@@ -42,6 +42,12 @@ public:
 		addr_in.sin_port = port;
 		addr_in.sin_addr.s_addr = inet_addr(ip);
 	}
+	CSockParam(const sockaddr_in* addrin, int attr) {
+		this->ip = ip;
+		this->port = port;
+		this->attr = attr;
+		memcpy(&addr_in, addrin, sizeof(addr_in));
+	}
 	CSockParam(const Buffer& path, int attr) {
 		ip = path;
 		addr_un.sun_family = AF_UNIX;
@@ -116,6 +122,8 @@ public:
 	};
 	virtual operator int() { return m_socket; }
 	virtual operator int()const { return m_socket; }
+	virtual operator const sockaddr_in* ()const { return &m_param.addr_in; }
+	virtual operator sockaddr_in* () { return &m_param.addr_in; }
 protected:
 	//Ì×½Ó×ÖÃèÊö·û£¬Ä¬ÈÏÊÇ-1
 	int m_socket;
