@@ -27,7 +27,7 @@ public:
 	const Buffer& Status() const { return m_status; }
 	const Buffer& Url() const { return m_url; }
 	const Buffer& Body() const { return m_body; }
-	unsigned Errno() const { m_parser.http_errno; }
+	unsigned Errno() const { return m_parser.http_errno; }
 protected:
 	static int OnMessageBegin(http_parser* parser);
 	static int OnUrl(http_parser* parser, const char* at, size_t length);
@@ -57,7 +57,7 @@ public:
 	Buffer Protocol()const { return m_protocol; }
 	Buffer Host()const { return m_host; }
 	//Ä¬ÈÏ·µ»Ø80
-	int Port()const { m_port; }
+	int Port()const { return m_port; }
 	void SetUrl(const Buffer& url);
 private:
 	Buffer m_url;
