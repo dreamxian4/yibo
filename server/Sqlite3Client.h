@@ -55,6 +55,7 @@ private:
 class _sqlite3_table_ :
 	public _Table_
 {
+public:
 	_sqlite3_table_() :_Table_() {}
 	_sqlite3_table_(const _sqlite3_table_& table);
 	virtual ~_sqlite3_table_() {}
@@ -81,6 +82,8 @@ class _sqlite3_field_ :
 	public _Field_
 {
 public:
+	_sqlite3_field_();
+	virtual ~_sqlite3_field_() {}
 	virtual Buffer Create();
 	virtual void LoadFromStr(const Buffer& str);
 	//where 语句使用的
@@ -88,4 +91,13 @@ public:
 	virtual Buffer toSqlStr() const;
 	//列的全名
 	virtual operator const Buffer() const;
+private:
+	Buffer Str2Hex(const Buffer& data) const;
+	union {
+		bool Bool;
+		int Integer;
+		double Double;
+		Buffer* String;
+	}Value;
+	int nType;
 };

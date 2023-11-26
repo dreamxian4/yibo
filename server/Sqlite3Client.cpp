@@ -201,6 +201,33 @@ Buffer _sqlite3_table_::Delete(const _Table_& values)
 	return sql;
 }
 
+Buffer _sqlite3_table_::Modify(const _Table_& values)
+{
+	//UPDATE 表全名 SET 列1=值1 , ... , 列n=值n [WHERE 条件];
+	Buffer sql = "UPDATE " + (Buffer)*this + " (";
+	bool isfirst = true;
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		if (FieldDefine[i]->Condition & SQL_MODIFY) {
+			if (!isfirst)sql += ",";
+			else isfirst = false;
+			sql += (Buffer)*FieldDefine[i] + "=" + FieldDefine[i]->toSqlStr();
+		}
+	}
+	Buffer Where = "";
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		if (FieldDefine[i]->Condition & SQL_CONDITION) {
+			if (!isfirst)Where += " AND ";
+			else isfirst = false;
+			Where += (Buffer)*FieldDefine[i] + "=" + FieldDefine[i]->toSqlStr();
+		}
+	}
+	if (Where.size() > 0)
+		sql += " WHERE " + Where;
+	sql += " ;";
+	TRACEI("sql = %s", (char*)sql);
+	return sql;
+}
+
 Buffer _sqlite3_table_::Query()
 {//SELECT 列名1 ,列名2 ,... ,列名n FROM 表全名;
 	Buffer sql = "SELECT ";
@@ -232,4 +259,137 @@ _sqlite3_table_::operator const Buffer() const
 	if (Database.size())
 		Head = '"' + Database + "\".";
 	return Head + '"' + Name + '"';
+}
+
+_sqlite3_field_::_sqlite3_field_()
+	:_Field_() {
+	nType = TYPE_NULL;
+	Value.Double = 0.0;
+}
+
+Buffer _sqlite3_field_::Create()
+{	//"名称" 类型 属性
+	Buffer sql = '"' + Name + "\" " + Type + " ";
+	if (Attr & NOT_NULL) {
+		sql += " NOT NULL ";
+	}
+	if (Attr & DEFAULT) {
+		sql += " DEFAULT " + Default + " ";
+	}
+	if (Attr & UNIQUE) {
+		sql += " UNIQUE ";
+	}
+	if (Attr & PRIMARY_KEY) {
+		sql += " PRIMARY KEY ";
+	}
+	if (Attr & CHECK) {
+		sql += " CHECK( " + Check + ") ";
+	}
+	if (Attr & AUTOINCREMENT) {
+		sql += " AUTOINCREMENT ";
+	}
+	return sql;
+}
+
+void _sqlite3_field_::LoadFromStr(const Buffer& str)
+{
+	switch (nType)
+	{
+	case TYPE_NULL:
+		break;
+	case TYPE_BOOL:
+	case TYPE_INT:
+	case TYPE_DATETIME:
+		Value.Integer = atoi(str);
+		break;
+	case TYPE_REAL:
+		Value.Double = atof(str);
+		break;
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+		*Value.String = str;
+		break;
+	case TYPE_BLOB:
+		*Value.String = Str2Hex(str);
+		break;
+	default:
+		TRACEW("type=%d", nType);
+		break;
+	}
+}
+
+Buffer _sqlite3_field_::toEqualExp() const
+{
+	Buffer sql = (Buffer)*this + " = ";
+	std::stringstream ss;
+	switch (nType)
+	{
+	case TYPE_NULL:
+		sql += " NULL ";
+		break;
+	case TYPE_BOOL:
+	case TYPE_INT:
+	case TYPE_DATETIME:
+		ss << Value.Integer;
+		sql += ss.str() + " ";
+		break;
+	case TYPE_REAL:
+		ss << Value.Double;
+		sql += ss.str() + " ";
+		break;
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+	case TYPE_BLOB:
+		sql += '"' + *Value.String + "\" ";
+		break;
+	default:
+		TRACEW("type=%d", nType);
+		break;
+	}
+	return sql;
+}
+
+Buffer _sqlite3_field_::toSqlStr() const
+{
+	Buffer sql = "";
+	std::stringstream ss;
+	switch (nType)
+	{
+	case TYPE_NULL:
+		sql += " NULL ";
+		break;
+	case TYPE_BOOL:
+	case TYPE_INT:
+	case TYPE_DATETIME:
+		ss << Value.Integer;
+		sql += ss.str() + " ";
+		break;
+	case TYPE_REAL:
+		ss << Value.Double;
+		sql += ss.str() + " ";
+		break;
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+	case TYPE_BLOB:
+		sql += '"' + *Value.String + "\" ";
+		break;
+	default:
+		TRACEW("type=%d", nType);
+		break;
+	}
+	return sql;
+}
+
+_sqlite3_field_::operator const Buffer() const
+{
+	return '"' + Name + '"';
+}
+
+Buffer _sqlite3_field_::Str2Hex(const Buffer& data) const
+{
+	const char* hex = "0123456789ABCDEF";
+	std::stringstream ss;
+	for (auto ch : data)
+		ss << hex[(unsigned char)ch >> 4] << hex[(unsigned char)ch & 0xF];
+	return ss.str();
 }
