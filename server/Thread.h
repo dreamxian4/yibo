@@ -18,7 +18,7 @@ public:
 
 	template<typename _FUNCTION_, typename... _ARGS_>
 	CThread(_FUNCTION_ func, _ARGS_... args)
-		:m_function(new CFunction<_FUNCTION_, _ARGS_...>(func, args...))
+		:m_function(new CFunction(func, args...))
 	{
 		m_thread = 0;
 		m_bpaused = false;
@@ -32,7 +32,7 @@ public:
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetThreadFunc(_FUNCTION_ func, _ARGS_... args)
 	{
-		m_function = new CFunction<_FUNCTION_, _ARGS_...>(func, args...);
+		m_function = new CFunction(func, args...);
 		if (m_function == NULL)return -1;
 		return 0;
 	}
