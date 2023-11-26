@@ -4,34 +4,32 @@
 #include "ThreadPool.h"
 #include "Process.h"
 
+template<typename _FUNCTION_, typename... _ARGS_>
 class CConnectedFunction :public CFunctionBase
 {
 public:
-	template<typename _FUNCTION_, typename... _ARGS_>
 	CConnectedFunction(_FUNCTION_ func, _ARGS_... args)
-		:m_binder(std::bind(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...))
+		:m_binder(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...)
 	{}
 	virtual ~CConnectedFunction() {}
 	virtual int operator()(CSocketBase* pClient) {
 		return m_binder(pClient);
 	}
-	std::function<int(CSocketBase*)>m_binder;
-	//typename std::_Bindres_helper<int, _FUNCTION_, _ARGS_...>::type m_binder;
+	typename std::_Bindres_helper<int, _FUNCTION_, _ARGS_...>::type m_binder;
 };
 
+template<typename _FUNCTION_, typename... _ARGS_>
 class CReceivedFunction :public CFunctionBase
 {
 public:
-	template<typename _FUNCTION_, typename... _ARGS_>
 	CReceivedFunction(_FUNCTION_ func, _ARGS_... args)
-		:m_binder(std::bind(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...))
+		:m_binder(std::forward<_FUNCTION_>(func), std::forward<_ARGS_>(args)...)
 	{}
 	virtual ~CReceivedFunction() {}
 	virtual int operator()(CSocketBase* pClient, const Buffer& data) {
 		return m_binder(pClient, data);
 	}
-	std::function<int(CSocketBase*, const Buffer&)> m_binder;
-	//typename std::_Bindres_helper<int, _FUNCTION_, _ARGS_...>::type m_binder;
+	typename std::_Bindres_helper<int, _FUNCTION_, _ARGS_...>::type m_binder;
 };
 
 class CBusiness
@@ -43,13 +41,13 @@ public:
 	virtual int BusinessProcess(CProcess* proc) = 0;
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int setConnectedCallback(_FUNCTION_ func, _ARGS_... args) {
-		m_connectedcallback = new CConnectedFunction(func, args...);
+		m_connectedcallback = new CConnectedFunction< _FUNCTION_, _ARGS_...>(func, args...);
 		if (m_connectedcallback == NULL)return -1;
 		return 0;
 	}
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int setRecvCallback(_FUNCTION_ func, _ARGS_... args) {
-		m_recvcallback = new CReceivedFunction(func, args...);
+		m_recvcallback = new CReceivedFunction< _FUNCTION_, _ARGS_...>(func, args...);
 		if (m_recvcallback == NULL)return -1;
 		return 0;
 	}
