@@ -32,7 +32,7 @@ public:
 	virtual int RollbackTransaction();
 	//关闭连接
 	virtual int Close();
-	//是否连接
+	//是否连接 true表示连接中 false表示未连接
 	virtual bool IsConnected();
 private:
 	static int ExecCallback(void* arg, int count, char** names, char** values);
@@ -52,3 +52,39 @@ private:
 	};
 };
 
+class _sqlite3_table_ :
+	public _Table_
+{
+	_sqlite3_table_() :_Table_() {}
+	_sqlite3_table_(const _sqlite3_table_& table);
+	virtual ~_sqlite3_table_() {}
+	//返回创建的SQL语句
+	virtual Buffer Create();
+	//删除表
+	virtual Buffer Drop();
+	//增删改查
+	//TODO:参数进行优化
+	virtual Buffer Insert(const _Table_& values);
+	virtual Buffer Delete();
+	//TODO:参数进行优化
+	virtual Buffer Modify();
+	virtual Buffer Query();
+	//创建一个基于表的对象
+	virtual PTable Copy()const;
+public:
+	//获取表的全名
+	virtual operator const Buffer() const;
+};
+
+class _sqlite3_field_ :
+	public _Field_
+{
+public:
+	virtual Buffer Create();
+	virtual void LoadFromStr(const Buffer& str);
+	//where 语句使用的
+	virtual Buffer toEqualExp() const;
+	virtual Buffer toSqlStr() const;
+	//列的全名
+	virtual operator const Buffer() const;
+};
