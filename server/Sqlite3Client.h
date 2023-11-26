@@ -65,12 +65,13 @@ class _sqlite3_table_ :
 	//增删改查
 	//TODO:参数进行优化
 	virtual Buffer Insert(const _Table_& values);
-	virtual Buffer Delete();
+	virtual Buffer Delete(const _Table_& values);
 	//TODO:参数进行优化
-	virtual Buffer Modify();
+	virtual Buffer Modify(const _Table_& values);
 	virtual Buffer Query();
 	//创建一个基于表的对象
 	virtual PTable Copy()const;
+	virtual void ClearFieldUsed();
 public:
 	//获取表的全名
 	virtual operator const Buffer() const;

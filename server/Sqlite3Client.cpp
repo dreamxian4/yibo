@@ -140,9 +140,9 @@ Buffer _sqlite3_table_::Create()
 {	//CREATE TABLE IF NOT EXISTS 表全名 (列定义,……);
 	//表全名 = 数据库.表名
 	Buffer sql = "CREATE TABLE IF NOT EXISTS " + (Buffer)*this + "(\r\n";
-	for (size_t i = 0; i < Fields.size(); i++) {
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
 		if (i > 0)sql += ",";
-		sql += Fields[i]->Create();
+		sql += FieldDefine[i]->Create();
 	}
 	sql += ");";
 	TRACEI("sql = %s", (char*)sql);
@@ -156,7 +156,80 @@ Buffer _sqlite3_table_::Drop()
 	return sql;
 }
 
+Buffer _sqlite3_table_::Insert(const _Table_& values)
+{	//INSERT INTO 表全名 (列1,...,列n)
+	//VALUES(值1,...,值n);
+	Buffer sql = "INSERT INTO " + (Buffer)*this + " (";
+	bool isfirst = true;
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		if (FieldDefine[i]->Condition & SQL_INSERT) {
+			if (!isfirst)sql += ",";
+			else isfirst = false;
+			sql += (Buffer)*FieldDefine[i];
+		}
+	}
+	sql += ") VALUES(";
+	isfirst = true;
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		if (FieldDefine[i]->Condition & SQL_INSERT) {
+			if (!isfirst)sql += ",";
+			else isfirst = false;
+			sql += FieldDefine[i]->toSqlStr();
+		}
+	}
+	sql += " );";
+	TRACEI("sql = %s", (char*)sql);
+	return sql;
+}
+
+Buffer _sqlite3_table_::Delete(const _Table_& values)
+{// DELETE FROM 表全名 WHERE 条件
+	Buffer sql = "DELETE FROM " + (Buffer)*this + " ";
+	Buffer Where = "";
+	bool isfirst = true;
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		if (FieldDefine[i]->Condition & SQL_CONDITION) {
+			if (!isfirst)Where += " AND ";
+			else isfirst = false;
+			Where += (Buffer)*FieldDefine[i] + "=" + FieldDefine[i]->toSqlStr();
+		}
+	}
+	if (Where.size() > 0)
+		sql += " WHERE " + Where;
+	sql += ";";
+	TRACEI("sql = %s", (char*)sql);
+	return sql;
+}
+
+Buffer _sqlite3_table_::Query()
+{//SELECT 列名1 ,列名2 ,... ,列名n FROM 表全名;
+	Buffer sql = "SELECT ";
+	for (size_t i = 0; i < FieldDefine.size(); i++)
+	{
+		if (i > 0)sql += ',';
+		sql += '"' + FieldDefine[i]->Name + "\" ";
+	}
+	sql += " FROM " + (Buffer)*this + ";";
+	TRACEI("sql = %s", (char*)sql);
+	return sql;
+}
+
 PTable _sqlite3_table_::Copy() const
 {
 	return PTable(new _sqlite3_table_(*this));
+}
+
+void _sqlite3_table_::ClearFieldUsed()
+{
+	for (size_t i = 0; i < FieldDefine.size(); i++) {
+		FieldDefine[i]->Condition = 0;
+	}
+}
+
+_sqlite3_table_::operator const Buffer() const
+{
+	Buffer Head;
+	if (Database.size())
+		Head = '"' + Database + "\".";
+	return Head + '"' + Name + '"';
 }
