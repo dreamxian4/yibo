@@ -58,7 +58,7 @@ class _sqlite3_table_ :
 public:
 	_sqlite3_table_() :_Table_() {}
 	_sqlite3_table_(const _sqlite3_table_& table);
-	virtual ~_sqlite3_table_() {}
+	virtual ~_sqlite3_table_();
 	//返回创建的SQL语句
 	virtual Buffer Create();
 	//删除表
@@ -83,7 +83,17 @@ class _sqlite3_field_ :
 {
 public:
 	_sqlite3_field_();
-	virtual ~_sqlite3_field_() {}
+	_sqlite3_field_(
+		int ntype,
+		const Buffer& name,
+		unsigned attr,
+		const Buffer& type,
+		const Buffer& size,
+		const Buffer& default_,
+		const Buffer& check
+	);
+	_sqlite3_field_(const _sqlite3_field_& field);
+	virtual ~_sqlite3_field_();
 	virtual Buffer Create();
 	virtual void LoadFromStr(const Buffer& str);
 	//where 语句使用的
@@ -101,3 +111,4 @@ private:
 	}Value;
 	int nType;
 };
+

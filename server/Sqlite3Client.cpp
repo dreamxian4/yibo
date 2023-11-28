@@ -14,7 +14,7 @@ int CSqlite3Client::Connect(const KeyValue& args)
 	return 0;
 }
 
-int CSqlite3Client::Exec(const Buffer& sql)
+int CSqlite3Client::(const Buffer& sql)
 {
 	if (m_db == NULL)return -1;
 	int ret = sqlite3_exec(m_db, sql, NULL, this, NULL);
@@ -135,6 +135,9 @@ _sqlite3_table_::_sqlite3_table_(const _sqlite3_table_& table)
 		Fields[field->Name] = field;
 	}
 }
+
+_sqlite3_table_::~_sqlite3_table_()
+{}
 
 Buffer _sqlite3_table_::Create()
 {	//CREATE TABLE IF NOT EXISTS 表全名 (列定义,……);
@@ -267,6 +270,42 @@ _sqlite3_field_::_sqlite3_field_()
 	Value.Double = 0.0;
 }
 
+_sqlite3_field_::_sqlite3_field_(int ntype, const Buffer& name, unsigned attr, const Buffer& type, const Buffer& size, const Buffer& default_, const Buffer& check)
+{
+	nType = ntype;
+	switch (ntype)
+	{
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+	case TYPE_BLOB:
+		Value.String = new Buffer();
+		break;
+	}
+
+	Name = name;
+	Attr = attr;
+	Type = type;
+	Size = size;
+	Default = default_;
+	Check = check;
+}
+
+_sqlite3_field_::~_sqlite3_field_()
+{
+	switch (nType)
+	{
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+	case TYPE_BLOB:
+		if (Value.String) {
+			Buffer* p = Value.String;
+			Value.String = NULL;
+			delete p;
+		}
+		break;
+	}
+}
+
 Buffer _sqlite3_field_::Create()
 {	//"名称" 类型 属性
 	Buffer sql = '"' + Name + "\" " + Type + " ";
@@ -393,3 +432,6 @@ Buffer _sqlite3_field_::Str2Hex(const Buffer& data) const
 		ss << hex[(unsigned char)ch >> 4] << hex[(unsigned char)ch & 0xF];
 	return ss.str();
 }
+
+
+
