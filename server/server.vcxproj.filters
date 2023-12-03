@@ -11,6 +11,7 @@
     <ClCompile Include="DatabaseHelper.cpp" />
     <ClCompile Include="Sqlite3Client.cpp" />
     <ClCompile Include="sqlite3\sqlite3.c" />
+    <ClCompile Include="MysqlClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CServer.h" />
@@ -29,5 +30,6 @@
     <ClInclude Include="Sqlite3Client.h" />
     <ClInclude Include="sqlite3\sqlite3.h" />
     <ClInclude Include="sqlite3\sqlite3ext.h" />
+    <ClInclude Include="MysqlClient.h" />
   </ItemGroup>
 </Project>

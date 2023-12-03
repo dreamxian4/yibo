@@ -14,13 +14,14 @@ int CSqlite3Client::Connect(const KeyValue& args)
 	return 0;
 }
 
-int CSqlite3Client::(const Buffer& sql)
+int CSqlite3Client::Exec(const Buffer& sql)
 {
+	printf("sql={%s}\n", (char*)sql);
 	if (m_db == NULL)return -1;
 	int ret = sqlite3_exec(m_db, sql, NULL, this, NULL);
 	if (ret != SQLITE_OK) {
-		TRACEE("sql={%s}", sql);
-		TRACEE("Exec failed:%d [%s]", ret, sqlite3_errmsg(m_db));
+		printf("sql={%s}\n", (char*)sql);
+		printf("Exec failed:%d [%s]\n", ret, sqlite3_errmsg(m_db));
 		return -2;
 	}
 	return 0;
@@ -30,12 +31,13 @@ int CSqlite3Client::Exec(const Buffer& sql, Result& result, const _Table_& table
 {
 	char* errmsg = NULL;
 	if (m_db == NULL)return -1;
+	printf("sql={%s}\n", (char*)sql);
 	ExecParam param(this, result, table);
 	int ret = sqlite3_exec(m_db, sql,
 		&CSqlite3Client::ExecCallback, (void*)&param, &errmsg);
 	if (ret != SQLITE_OK) {
-		TRACEE("sql={%s}", sql);
-		TRACEE("Exec failed:%d [%s]", ret, errmsg);
+		printf("sql={%s}\n", sql);
+		printf("Exec failed:%d [%s]\n", ret, errmsg);
 		if (errmsg)sqlite3_free(errmsg);
 		return -2;
 	}
@@ -96,7 +98,7 @@ bool CSqlite3Client::IsConnected()
 	return m_db != NULL;
 }
 
-int CSqlite3Client::ExecCallback(void* arg, int count, char** names, char** values)
+int CSqlite3Client::ExecCallback(void* arg, int count, char** values, char** names)
 {
 	ExecParam* param = (ExecParam*)arg;
 	return param->obj->ExecCallback(param->result, param->table, count, names, values);
@@ -106,14 +108,14 @@ int CSqlite3Client::ExecCallback(Result& result, const _Table_& table, int count
 {
 	PTable pTable = table.Copy();
 	if (pTable == nullptr) {
-		TRACEE("table %s error!", (const char*)(Buffer)table);
+		printf("table %s error!\n", (const char*)(Buffer)table);
 		return -1;
 	}
 	for (int i = 0; i < count; i++) {
 		Buffer name = names[i];
 		auto it = pTable->Fields.find(name);
 		if (it == pTable->Fields.end()) {
-			TRACEE("table %s error!", (const char*)(Buffer)table);
+			printf("table %s error!\n", (const char*)(Buffer)table);
 			return -2;
 		}
 		if (values[i] != NULL)
@@ -164,20 +166,20 @@ Buffer _sqlite3_table_::Insert(const _Table_& values)
 	//VALUES(值1,...,值n);
 	Buffer sql = "INSERT INTO " + (Buffer)*this + " (";
 	bool isfirst = true;
-	for (size_t i = 0; i < FieldDefine.size(); i++) {
-		if (FieldDefine[i]->Condition & SQL_INSERT) {
+	for (size_t i = 0; i < values.FieldDefine.size(); i++) {
+		if (values.FieldDefine[i]->Condition & SQL_INSERT) {
 			if (!isfirst)sql += ",";
 			else isfirst = false;
-			sql += (Buffer)*FieldDefine[i];
+			sql += (Buffer)*values.FieldDefine[i];
 		}
 	}
-	sql += ") VALUES(";
+	sql += ") VALUES (";
 	isfirst = true;
-	for (size_t i = 0; i < FieldDefine.size(); i++) {
-		if (FieldDefine[i]->Condition & SQL_INSERT) {
+	for (size_t i = 0; i < values.FieldDefine.size(); i++) {
+		if (values.FieldDefine[i]->Condition & SQL_INSERT) {
 			if (!isfirst)sql += ",";
 			else isfirst = false;
-			sql += FieldDefine[i]->toSqlStr();
+			sql += values.FieldDefine[i]->toSqlStr();
 		}
 	}
 	sql += " );";
@@ -207,21 +209,22 @@ Buffer _sqlite3_table_::Delete(const _Table_& values)
 Buffer _sqlite3_table_::Modify(const _Table_& values)
 {
 	//UPDATE 表全名 SET 列1=值1 , ... , 列n=值n [WHERE 条件];
-	Buffer sql = "UPDATE " + (Buffer)*this + " (";
+	Buffer sql = "UPDATE " + (Buffer)*this + " SET ";
 	bool isfirst = true;
-	for (size_t i = 0; i < FieldDefine.size(); i++) {
-		if (FieldDefine[i]->Condition & SQL_MODIFY) {
+	for (size_t i = 0; i < values.FieldDefine.size(); i++) {
+		if (values.FieldDefine[i]->Condition & SQL_MODIFY) {
 			if (!isfirst)sql += ",";
 			else isfirst = false;
-			sql += (Buffer)*FieldDefine[i] + "=" + FieldDefine[i]->toSqlStr();
+			sql += (Buffer)*values.FieldDefine[i] + "=" + values.FieldDefine[i]->toSqlStr();
 		}
 	}
+
 	Buffer Where = "";
-	for (size_t i = 0; i < FieldDefine.size(); i++) {
-		if (FieldDefine[i]->Condition & SQL_CONDITION) {
+	for (size_t i = 0; i < values.FieldDefine.size(); i++) {
+		if (values.FieldDefine[i]->Condition & SQL_CONDITION) {
 			if (!isfirst)Where += " AND ";
 			else isfirst = false;
-			Where += (Buffer)*FieldDefine[i] + "=" + FieldDefine[i]->toSqlStr();
+			Where += (Buffer)*values.FieldDefine[i] + "=" + values.FieldDefine[i]->toSqlStr();
 		}
 	}
 	if (Where.size() > 0)
@@ -288,6 +291,27 @@ _sqlite3_field_::_sqlite3_field_(int ntype, const Buffer& name, unsigned attr, c
 	Size = size;
 	Default = default_;
 	Check = check;
+}
+
+_sqlite3_field_::_sqlite3_field_(const _sqlite3_field_& field)
+{
+	nType = field.nType;
+	switch (field.nType)
+	{
+	case TYPE_VARCHAR:
+	case TYPE_TEXT:
+	case TYPE_BLOB:
+		Value.String = new Buffer();
+		*Value.String = *field.Value.String;
+		break;
+	}
+
+	Name = field.Name;
+	Attr = field.Attr;
+	Type = field.Type;
+	Size = field.Size;
+	Default = field.Default;
+	Check = field.Check;
 }
 
 _sqlite3_field_::~_sqlite3_field_()
