@@ -75,6 +75,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
+    <ClCompile Include="Crypto.cpp" />
     <ClCompile Include="CServer.cpp" />
     <ClCompile Include="DatabaseHelper.cpp" />
     <ClCompile Include="Epoll.cpp" />
@@ -88,6 +89,7 @@
     <ClCompile Include="Thread.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Crypto.h" />
     <ClInclude Include="CServer.h" />
     <ClInclude Include="DatabaseHelper.h" />
     <ClInclude Include="EdoyunPlayerServer.h" />
@@ -115,7 +117,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>-pthread %(AdditionalOptions)</AdditionalOptions>
-      <LibraryDependencies>pthread;m;dl;mysqlclient;</LibraryDependencies>
+      <LibraryDependencies>pthread;m;dl;mysqlclient;crypto;</LibraryDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
