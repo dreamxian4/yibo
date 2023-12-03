@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "Logger.h"
 #include "CServer.h"
 #include "HttpParser.h"
@@ -9,10 +9,10 @@
 
 DECLARE_TABLE_CLASS(edoyunLogin_user_mysql, _mysql_table_)
 DECLARE_MYSQL_FIELD(TYPE_INT, user_id, NOT_NULL | PRIMARY_KEY | AUTOINCREMENT, "INTEGER", "", "", "")
-DECLARE_MYSQL_FIELD(TYPE_VARCHAR, user_qq, NOT_NULL, "VARCHAR", "(15)", "", "")  //QQºÅ
-DECLARE_MYSQL_FIELD(TYPE_VARCHAR, user_phone, DEFAULT, "VARCHAR", "(11)", "'18888888888'", "")  //ÊÖ»ú
-DECLARE_MYSQL_FIELD(TYPE_TEXT, user_name, NOT_NULL, "TEXT", "", "", "")    //ĞÕÃû
-DECLARE_MYSQL_FIELD(TYPE_TEXT, user_nick, NOT_NULL, "TEXT", "", "", "")    //êÇ³Æ
+DECLARE_MYSQL_FIELD(TYPE_VARCHAR, user_qq, NOT_NULL, "VARCHAR", "(15)", "", "")  //QQå·
+DECLARE_MYSQL_FIELD(TYPE_VARCHAR, user_phone, DEFAULT, "VARCHAR", "(11)", "'18888888888'", "")  //æ‰‹æœº
+DECLARE_MYSQL_FIELD(TYPE_TEXT, user_name, NOT_NULL, "TEXT", "", "", "")    //å§“å
+DECLARE_MYSQL_FIELD(TYPE_TEXT, user_nick, NOT_NULL, "TEXT", "", "", "")    //æ˜µç§°
 DECLARE_MYSQL_FIELD(TYPE_TEXT, user_wechat, DEFAULT, "TEXT", "", "NULL", "")
 DECLARE_MYSQL_FIELD(TYPE_TEXT, user_wechat_id, DEFAULT, "TEXT", "", "NULL", "")
 DECLARE_MYSQL_FIELD(TYPE_TEXT, user_address, DEFAULT, "TEXT", "", "", "")
@@ -34,9 +34,9 @@ DECLARE_MYSQL_FIELD(TYPE_INT, user_register_time, DEFAULT, "DATETIME", "", "LOCA
 DECLARE_TABLE_CLASS_EDN()
 
 /*
-* 1. ¿Í»§¶ËµÄµØÖ·ÎÊÌâ
-* 2. Á¬½Ó»Øµ÷µÄ²ÎÊıÎÊÌâ
-* 3. ½ÓÊÕ»Øµ÷µÄ²ÎÊıÎÊÌâ
+* 1. å®¢æˆ·ç«¯çš„åœ°å€é—®é¢˜
+* 2. è¿æ¥å›è°ƒçš„å‚æ•°é—®é¢˜
+* 3. æ¥æ”¶å›è°ƒçš„å‚æ•°é—®é¢˜
 */
 #define ERR_RETURN(ret, err) if(ret!=0){TRACEE("ret= %d errno = %d msg = [%s]", ret, errno, strerror(errno));return err;}
 
@@ -100,6 +100,7 @@ public:
 		sockaddr_in addrin;
 		while (m_epoll != -1) {
 			ret = proc->RecvSocket(sock, &addrin);
+			TRACEI("RecvSocket ret=%d", ret);
 			if (ret < 0 || (sock == 0))break;
 			CSocketBase* pClient = new CSocket(sock);
 			if (pClient == NULL)continue;
@@ -115,20 +116,22 @@ public:
 	}
 private:
 	int Connected(CSocketBase* pClient) {
-		//TODO:¿Í»§¶ËÁ¬½Ó´¦Àí ¼òµ¥´òÓ¡Ò»ÏÂ¿Í»§¶ËĞÅÏ¢
+		//TODO:å®¢æˆ·ç«¯è¿æ¥å¤„ç† ç®€å•æ‰“å°ä¸€ä¸‹å®¢æˆ·ç«¯ä¿¡æ¯
 		sockaddr_in* paddr = *pClient;
 		TRACEI("client connected addr %s port:%d", inet_ntoa(paddr->sin_addr), paddr->sin_port);
 		return 0;
 	}
 
 	int Received(CSocketBase* pClient, const Buffer& data) {
-		//TODO:Ö÷ÒªÒµÎñ£¬ÔÚ´Ë´¦Àí
-		//HTTP ½âÎö
+		TRACEI("æ¥æ”¶åˆ°æ•°æ®ï¼");
+		//TODO:ä¸»è¦ä¸šåŠ¡ï¼Œåœ¨æ­¤å¤„ç†
+		//HTTP è§£æ
 		int ret = 0;
 		Buffer response = "";
 		ret = HttpParser(data);
-		//ÑéÖ¤½á¹ûµÄ·´À¡
-		if (ret != 0) {//ÑéÖ¤Ê§°Ü
+		TRACEI("HttpParser ret=%d", ret);
+		//éªŒè¯ç»“æœçš„åé¦ˆ
+		if (ret != 0) {//éªŒè¯å¤±è´¥
 			TRACEE("http parser failed!%d", ret);
 		}
 		response = MakeResponse(ret);
@@ -149,7 +152,7 @@ private:
 			return -1;
 		}
 		if (parser.Method() == HTTP_GET) {
-			//get ´¦Àí
+			//get å¤„ç†
 			UrlParser url("https://192.168.1.100" + parser.Url());
 			int ret = url.Parser();
 			if (ret != 0) {
@@ -157,14 +160,15 @@ private:
 				return -2;
 			}
 			Buffer uri = url.Uri();
+			TRACEI("**** uri = %s", (char*)uri);
 			if (uri == "login") {
-				//´¦ÀíµÇÂ¼
+				//å¤„ç†ç™»å½•
 				Buffer time = url["time"];
 				Buffer salt = url["salt"];
 				Buffer user = url["user"];
 				Buffer sign = url["sign"];
 				TRACEI("time %s salt %s user %s sign %s", (char*)time, (char*)salt, (char*)user, (char*)sign);
-				//Êı¾İ¿âµÄ²éÑ¯
+				//æ•°æ®åº“çš„æŸ¥è¯¢
 				edoyunLogin_user_mysql dbuser;
 				Result result;
 				Buffer sql = dbuser.Query("user_name=\"" + user + "\"");
@@ -184,7 +188,7 @@ private:
 				auto user1 = result.front();
 				Buffer pwd = *user1->Fields["user_password"]->Value.String;
 				TRACEI("password = %s", (char*)pwd);
-				//µÇÂ¼ÇëÇóµÄÑéÖ¤
+				//ç™»å½•è¯·æ±‚çš„éªŒè¯
 				const char* MD5_KEY = "*&^%$#@b.v+h-b*g/h@n!h#n$d^ssx,.kl<kl";
 				Buffer md5str = time + MD5_KEY + pwd + salt;
 				Buffer md5 = Crypto::MD5(md5str);
@@ -196,7 +200,7 @@ private:
 			}
 		}
 		else if (parser.Method() == HTTP_POST) {
-			//post ´¦Àí
+			//post å¤„ç†
 		}
 		return -7;
 	}
@@ -204,7 +208,7 @@ private:
 		Json::Value root;
 		root["status"] = ret;
 		if (ret != 0) {
-			root["message"] = "µÇÂ¼Ê§°Ü£¬¿ÉÄÜÊÇÓÃ»§Ãû»òÕßÃÜÂë´íÎó£¡";
+			root["message"] = "ç™»å½•å¤±è´¥ï¼Œå¯èƒ½æ˜¯ç”¨æˆ·åæˆ–è€…å¯†ç é”™è¯¯ï¼";
 		}
 		else {
 			root["message"] = "success";
@@ -243,7 +247,12 @@ private:
 						if (pClient) {
 							Buffer data;
 							ret = pClient->Recv(data);
-							WARN_CONTINUE(ret);
+							TRACEI("recv data size %d", ret);
+							if (ret <= 0) {
+								TRACEW("ret= %d errno = %d msg = [%s]", ret, errno, strerror(errno));
+								m_epoll.Del(*pClient);
+								continue;
+							}
 							if (m_recvcallback) {
 								(*m_recvcallback)(pClient, data);
 							}

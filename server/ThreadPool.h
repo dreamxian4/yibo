@@ -70,7 +70,7 @@ public:
 			ret = client.Link();
 			if (ret != 0)return -2;
 		}
-		CFunctionBase* base = new CFunction< _FUNCTION_, _ARGS_...>(func, args...);
+		CFunctionBase* base = new CFunction(func, args...);
 		if (base == NULL)return -3;
 		Buffer data(sizeof(base));
 		memcpy(data, &base, sizeof(base));

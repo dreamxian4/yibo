@@ -14,6 +14,7 @@ enum SockAttr {
 	SOCK_ISNONBLOCK = 2,//是否阻塞 1表示非阻塞 0表示阻塞
 	SOCK_ISUDP = 4,//是否为UDP 1表示udp 0表示tcp
 	SOCK_ISIP = 8,//是否为IP协议 1表示IP协议 0表示本地套接字
+	SOCK_ISREUSE = 16//是否重用地址
 };
 
 class CSockParam {
@@ -29,7 +30,7 @@ public:
 		this->port = port;
 		this->attr = attr;
 		addr_in.sin_family = AF_INET;
-		addr_in.sin_port = port;
+		addr_in.sin_port = htons(port);//h host主机 n net网络 s就是short 主机字节序转为网络字节序
 		addr_in.sin_addr.s_addr = inet_addr(ip);
 	}
 	CSockParam(const sockaddr_in* addrin, int attr) {
@@ -151,6 +152,11 @@ public:
 			m_status = 2;//accept来的套接字，已经处于连接状态
 		if (m_socket == -1)return -2;
 		int ret = 0;
+		if (m_param.attr & SOCK_ISREUSE) {
+			int option = 1;
+			ret = setsockopt(m_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+			if (ret == -1)return -7;
+		}
 		if (m_param.attr & SOCK_ISSERVER) {
 			if (param.attr & SOCK_ISIP)
 				ret = bind(m_socket, m_param.addrin(), sizeof(sockaddr_in));
@@ -224,11 +230,13 @@ public:
 	//接收数据 大于零，表示接收成功 小于 表示失败 等于0 表示没有收到数据，但没有错误
 	virtual int Recv(Buffer& data) {
 		if (m_status < 2 || (m_socket == -1))return -1;
+		data.resize(1024 * 1024);
 		ssize_t len = read(m_socket, data, data.size());
 		if (len > 0) {
 			data.resize(len);
 			return (int)len;//收到数据
 		}
+		data.clear();
 		if (len < 0) {
 			if (errno == EINTR || (errno == EAGAIN)) {//非阻塞
 				data.clear();

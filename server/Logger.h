@@ -83,7 +83,7 @@ public:
 			Close();
 			return -4;
 		}
-		ret = m_server->Init(CSockParam("./log/server.sock", (int)SOCK_ISSERVER));
+		ret = m_server->Init(CSockParam("./log/server.sock", (int)SOCK_ISSERVER| SOCK_ISREUSE));
 		if (ret != 0) {
 			Close();
 			return -5;

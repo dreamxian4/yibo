@@ -23,7 +23,7 @@ public:
 	template<typename _FUNCTION_, typename... _ARGS_>
 	int SetEntryFunction(_FUNCTION_ func, _ARGS_... args)
 	{
-		m_func = new CFunction<_FUNCTION_, _ARGS_...>(func, args...);
+		m_func = new CFunction(func, args...);
 		return 0;
 	}
 
@@ -107,14 +107,14 @@ public:
 
 	int SendSocket(int fd, const sockaddr_in* addrin) {//主进程完成
 		struct msghdr msg;
-		iovec iov[2];
-		char buf[2][10] = { "edoyun","jueding" };
-		iov[0].iov_base = (void*)addrin;
-		iov[0].iov_len = sizeof(sockaddr_in);
-		iov[1].iov_base = buf[1];
-		iov[1].iov_len = sizeof(buf[1]);
-		msg.msg_iov = iov;
-		msg.msg_iovlen = 2;
+		iovec iov;
+		char buf[20] = "";
+		bzero(&msg, sizeof(msg));
+		memcpy(buf, addrin, sizeof(sockaddr_in));
+		iov.iov_base = buf;
+		iov.iov_len = sizeof(buf);
+		msg.msg_iov = &iov;
+		msg.msg_iovlen = 1;
 
 		// 下面的数据，才是我们需要传递的。
 		cmsghdr* cmsg = (cmsghdr*)calloc(1, CMSG_LEN(sizeof(int)));
@@ -129,6 +129,7 @@ public:
 		ssize_t ret = sendmsg(pipes[1], &msg, 0);
 		free(cmsg);
 		if (ret == -1) {
+			printf("********errno %d msg:%s\n", errno, strerror(errno));
 			return -2;
 		}
 		return 0;
@@ -137,14 +138,13 @@ public:
 	int RecvSocket(int& fd, sockaddr_in* addrin)
 	{
 		msghdr msg;
-		iovec iov[2];
-		char buf[][10] = { "","" };
-		iov[0].iov_base = addrin;
-		iov[0].iov_len = sizeof(sockaddr_in);
-		iov[1].iov_base = buf[1];
-		iov[1].iov_len = sizeof(buf[1]);
-		msg.msg_iov = iov;
-		msg.msg_iovlen = 2;
+		iovec iov;
+		char buf[20] = "";
+		bzero(&msg, sizeof(msg));
+		iov.iov_base = buf;
+		iov.iov_len = sizeof(buf);
+		msg.msg_iov = &iov;
+		msg.msg_iovlen = 1;
 
 		cmsghdr* cmsg = (cmsghdr*)calloc(1, CMSG_LEN(sizeof(int)));
 		if (cmsg == NULL)return -1;
@@ -158,6 +158,7 @@ public:
 			free(cmsg);
 			return -2;
 		}
+		memcpy(addrin, buf, sizeof(sockaddr_in));
 		fd = *(int*)CMSG_DATA(cmsg);
 		free(cmsg);
 		return 0;
