@@ -321,7 +321,8 @@ int main()
 	//int ret = http_test();
 	//ret = sql_test();
 	//ret = mysql_test();
-	ret = crypto_test();
+	//ret = crypto_test();
+	ret = Main();
 	printf("main:ret = %d\n", ret);
 	return ret;
 }
